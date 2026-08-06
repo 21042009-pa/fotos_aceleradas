@@ -25,5 +25,15 @@
     "web": {
       "favicon": "./assets/favicon.png"
     }
+  },
+  "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Este app precisa de acesso a camera.",
+          "microphonePermission": "Este app precisa do microfone para gravar videos."
+        }
+      ]
+    ]
   }
-}
+
