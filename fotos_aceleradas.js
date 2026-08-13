@@ -3,6 +3,8 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
 import { Button, Text, StyleSheet, View } from "react-native";
+import React from "react";
+import { useState } from "react";
 
 export default function CameraScreen() {
   // =========================
