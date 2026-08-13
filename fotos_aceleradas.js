@@ -66,5 +66,17 @@ export default function AcelerometroScreen(){
   useEffect(() => {
     return () => subscriptionRef.current?.remove(); // cleanup ao desmontar
   }, []);
+
+    function iniciar() {
+    Accelerometer.setUpdateInterval(200);
+    subscriptionRef.current = Accelerometer.addListener(setData);
+    setAtivo(true);
+  }
+
+  function parar() {
+    subscriptionRef.current?.remove();
+    subscriptionRef.current = null;
+    setAtivo(false);
+  }
 }
 
