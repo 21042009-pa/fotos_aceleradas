@@ -2,8 +2,11 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
-import { Button, Text, StyleSheet, View, Image } from "react-native";
+import { Button, Text, Image, StyleSheet, View } from "react-native";
 import React from "react";
+
+const LIMIAR_QUEDA = 2.5; // magnitude "g" que caracteriza uma queda — calibre testando no aparelho
+const COOLDOWN_MS = 5000; // tempo mínimo entre duas capturas
 
 export default function CameraScreen() {
   // =========================
@@ -15,6 +18,15 @@ export default function CameraScreen() {
   const [pronta, setPronta] = useState(false);
   const [facing, setFacing] = useState("back");
 
+  // Referência para verificar se a câmera está pronta
+  const prontaRef = useRef(false);
+
+  // Controle do tempo entre capturas
+  const ultimaCapturaRef = useRef(0);
+
+  // Foto capturada
+  const [foto, setFoto] = useState(null);
+
   // =========================
   // CONFIGURAÇÃO ACELERÔMETRO
   // =========================
@@ -22,17 +34,6 @@ export default function CameraScreen() {
   const [data, setData] = useState({ x: 0, y: 0, z: 0 });
   const [ativo, setAtivo] = useState(false);
   const subscriptionRef = useRef(null);
-
-  // =========================
-  // CONFIGURAÇÃO DAS FOTOS
-  // =========================
-
-  const [foto, setFoto] = useState(null);
-  const prontaRef = useRef(false);
-  const ultimaCapturaRef = useRef(0);
-
-  const LIMIAR_QUEDA = 2.5; // magnitude "g" que caracteriza uma queda
-  const COOLDOWN_MS = 5000; // tempo mínimo entre duas capturas
 
   useEffect(() => {
     // Verifica se o acelerômetro está disponível
@@ -60,6 +61,14 @@ export default function CameraScreen() {
 
   function trocarCamera() {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
+  }
+
+  function verificarQueda({ x, y, z }) {
+    const magnitude = Math.sqrt(x * x + y * y + z * z);
+
+    if (magnitude > LIMIAR_QUEDA) {
+      tirarFoto();
+    }
   }
 
   async function tirarFoto() {
@@ -90,18 +99,8 @@ export default function CameraScreen() {
   // FUNÇÕES DO ACELERÔMETRO
   // =========================
 
-  function verificarQueda({ x, y, z }) {
-    const magnitude = Math.sqrt(x * x + y * y + z * z);
-
-    if (magnitude > LIMIAR_QUEDA) {
-      tirarFoto();
-    }
-  }
-
   function iniciar() {
-    if (subscriptionRef.current) {
-      return;
-    }
+    if (subscriptionRef.current) return;
 
     Accelerometer.setUpdateInterval(200);
 
