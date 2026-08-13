@@ -158,6 +158,72 @@ export default function CameraScreen() {
 }
 
 // =========================
+// TIRAR FOTO NA QUEDA
+// =========================
+const LIMIAR_QUEDA = 2.5;        // magnitude "g" que caracteriza uma queda — calibre testando no aparelho
+const COOLDOWN_MS = 5000;        // tempo mínimo entre duas capturas
+
+const [foto, setFoto] = useState(null);
+const prontaRef = useRef(false);
+const ultimaCapturaRef = useRef(0);
+
+useEffect(() => {
+  prontaRef.current = pronta;
+}, [pronta]);
+
+function verificarQueda({ x, y, z }) {
+  const magnitude = Math.sqrt(x * x + y * y + z * z);
+  if (magnitude > LIMIAR_QUEDA) {
+    tirarFoto();
+  }
+}
+
+async function tirarFoto() {
+  if (!cameraRef.current || !prontaRef.current) return;
+
+  const agora = Date.now();
+  if (agora - ultimaCapturaRef.current < COOLDOWN_MS) return;
+  ultimaCapturaRef.current = agora;
+
+  try {
+    const novaFoto = await cameraRef.current.takePictureAsync();
+    setFoto(novaFoto);
+    console.log("Queda detectada! Foto tirada:", novaFoto.uri);
+  } catch (erro) {
+    console.log("Erro ao tirar foto:", erro);
+  }
+}
+
+function iniciar() {
+  if (subscriptionRef.current) {
+    return;
+  }
+
+  Accelerometer.setUpdateInterval(200);
+
+  subscriptionRef.current = Accelerometer.addListener((novaLeitura) => {
+    setData(novaLeitura);
+    verificarQueda(novaLeitura);
+  });
+
+  setAtivo(true);
+}
+
+{foto && (
+  <Image
+    source={{ uri: foto.uri }}
+    style={styles.preview}
+    resizeMode="contain"
+  />
+)}
+
+preview: {
+  width: "100%";
+  height: 200;
+  marginTop: 10;
+};
+
+// =========================
 // ESTILIZAÇÃO
 // =========================
 
