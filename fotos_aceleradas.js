@@ -2,7 +2,11 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
-import { Button, Text, StyleSheet, View } from "react-native";
+import { Button, Text, Image, StyleSheet, View } from "react-native";
+import React from "react";
+
+const LIMIAR_QUEDA = 2.5; // magnitude "g" que caracteriza uma queda — calibre testando no aparelho
+const COOLDOWN_MS = 5000; // tempo mínimo entre duas capturas
 
 export default function CameraScreen() {
   // =========================
@@ -13,6 +17,15 @@ export default function CameraScreen() {
   const cameraRef = useRef(null);
   const [pronta, setPronta] = useState(false);
   const [facing, setFacing] = useState("back");
+
+  // Referência para verificar se a câmera está pronta
+  const prontaRef = useRef(false);
+
+  // Controle do tempo entre capturas
+  const ultimaCapturaRef = useRef(0);
+
+  // Foto capturada
+  const [foto, setFoto] = useState(null);
 
   // =========================
   // CONFIGURAÇÃO ACELERÔMETRO
@@ -38,6 +51,10 @@ export default function CameraScreen() {
     return () => subscriptionRef.current?.remove();
   }, []);
 
+  useEffect(() => {
+    prontaRef.current = pronta;
+  }, [pronta]);
+
   // =========================
   // FUNÇÕES DA CÂMERA
   // =========================
@@ -46,19 +63,52 @@ export default function CameraScreen() {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
   }
 
+  function verificarQueda({ x, y, z }) {
+    const magnitude = Math.sqrt(x * x + y * y + z * z);
+
+    if (magnitude > LIMIAR_QUEDA) {
+      tirarFoto();
+    }
+  }
+
+  async function tirarFoto() {
+    if (!cameraRef.current || !prontaRef.current) return;
+
+    const agora = Date.now();
+
+    if (agora - ultimaCapturaRef.current < COOLDOWN_MS) return;
+
+    ultimaCapturaRef.current = agora;
+
+    try {
+      const novaFoto = await cameraRef.current.takePictureAsync();
+
+      setFoto(novaFoto);
+
+      console.log("Queda detectada! Foto tirada:", novaFoto.uri);
+    } catch (erro) {
+      console.log("Erro ao tirar foto:", erro);
+    }
+  }
+
+  function apagarFoto() {
+    setFoto(null);
+  }
+
   // =========================
   // FUNÇÕES DO ACELERÔMETRO
   // =========================
 
   function iniciar() {
-    if (subscriptionRef.current) {
-      return;
-    }
+    if (subscriptionRef.current) return;
 
     Accelerometer.setUpdateInterval(200);
 
     // Inicia a leitura do acelerômetro
-    subscriptionRef.current = Accelerometer.addListener(setData);
+    subscriptionRef.current = Accelerometer.addListener((novaLeitura) => {
+      setData(novaLeitura);
+      verificarQueda(novaLeitura);
+    });
 
     setAtivo(true);
   }
@@ -86,14 +136,9 @@ export default function CameraScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.center}>
-        <Text style={styles.texto}>
-          Permissão de câmera necessária.
-        </Text>
+        <Text style={styles.texto}>Permissão de câmera necessária.</Text>
 
-        <Button
-          title="Solicitar"
-          onPress={requestPermission}
-        />
+        <Button title="Solicitar" onPress={requestPermission} />
       </View>
     );
   }
@@ -104,7 +149,6 @@ export default function CameraScreen() {
 
   return (
     <View style={styles.container}>
-
       <CameraView
         ref={cameraRef}
         style={styles.camera}
@@ -113,35 +157,23 @@ export default function CameraScreen() {
       />
 
       <View style={styles.painel}>
-
-        <Text style={styles.titulo}>
-          Fotos Aceleradas
-        </Text>
+        <Text style={styles.titulo}>Fotos Aceleradas</Text>
 
         <Text style={styles.status}>
           Câmera: {pronta ? "Pronta" : "Preparando..."}
         </Text>
 
         <View style={styles.dados}>
-          <Text style={styles.dado}>
-            X: {data.x.toFixed(2)}
-          </Text>
+          <Text style={styles.dado}>X: {data.x.toFixed(2)}</Text>
 
-          <Text style={styles.dado}>
-            Y: {data.y.toFixed(2)}
-          </Text>
+          <Text style={styles.dado}>Y: {data.y.toFixed(2)}</Text>
 
-          <Text style={styles.dado}>
-            Z: {data.z.toFixed(2)}
-          </Text>
+          <Text style={styles.dado}>Z: {data.z.toFixed(2)}</Text>
         </View>
 
         <View style={styles.botoes}>
           <View style={styles.botao}>
-            <Button
-              title="Trocar câmera"
-              onPress={trocarCamera}
-            />
+            <Button title="Trocar câmera" onPress={trocarCamera} />
           </View>
 
           <View style={styles.botao}>
@@ -152,76 +184,21 @@ export default function CameraScreen() {
           </View>
         </View>
 
+        {foto && (
+          <View style={styles.fotoContainer}>
+            <Image
+              source={{ uri: foto.uri }}
+              style={styles.preview}
+              resizeMode="contain"
+            />
+
+            <Button title="Apagar foto" onPress={apagarFoto} />
+          </View>
+        )}
       </View>
     </View>
   );
 }
-
-// =========================
-// TIRAR FOTO NA QUEDA
-// =========================
-const LIMIAR_QUEDA = 2.5;        // magnitude "g" que caracteriza uma queda — calibre testando no aparelho
-const COOLDOWN_MS = 5000;        // tempo mínimo entre duas capturas
-
-const [foto, setFoto] = useState(null);
-const prontaRef = useRef(false);
-const ultimaCapturaRef = useRef(0);
-
-useEffect(() => {
-  prontaRef.current = pronta;
-}, [pronta]);
-
-function verificarQueda({ x, y, z }) {
-  const magnitude = Math.sqrt(x * x + y * y + z * z);
-  if (magnitude > LIMIAR_QUEDA) {
-    tirarFoto();
-  }
-}
-
-async function tirarFoto() {
-  if (!cameraRef.current || !prontaRef.current) return;
-
-  const agora = Date.now();
-  if (agora - ultimaCapturaRef.current < COOLDOWN_MS) return;
-  ultimaCapturaRef.current = agora;
-
-  try {
-    const novaFoto = await cameraRef.current.takePictureAsync();
-    setFoto(novaFoto);
-    console.log("Queda detectada! Foto tirada:", novaFoto.uri);
-  } catch (erro) {
-    console.log("Erro ao tirar foto:", erro);
-  }
-}
-
-function iniciar() {
-  if (subscriptionRef.current) {
-    return;
-  }
-
-  Accelerometer.setUpdateInterval(200);
-
-  subscriptionRef.current = Accelerometer.addListener((novaLeitura) => {
-    setData(novaLeitura);
-    verificarQueda(novaLeitura);
-  });
-
-  setAtivo(true);
-}
-
-{foto && (
-  <Image
-    source={{ uri: foto.uri }}
-    style={styles.preview}
-    resizeMode="contain"
-  />
-)}
-
-preview: {
-  width: "100%";
-  height: 200;
-  marginTop: 10;
-};
 
 // =========================
 // ESTILIZAÇÃO
@@ -284,6 +261,17 @@ const styles = StyleSheet.create({
 
   botao: {
     marginVertical: 2,
+  },
+
+  fotoContainer: {
+    marginTop: 10,
+  },
+
+  preview: {
+    width: "100%",
+    height: 200,
+    marginTop: 10,
+    marginBottom: 10,
   },
 
   center: {
