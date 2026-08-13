@@ -5,8 +5,8 @@ import { useRef, useState } from "react";
 
 export default function CameraScreen(){
   const [permission, requestPermission] = useCameraPermissions();
-const cameraRef = useRef(null);
-const [pronta, setPronta] = useState(false);
+  const cameraRef = useRef(null);
+  const [pronta, setPronta] = useState(false);
 
 if (!permission) {
   return <Text>Verificando permissoes...</Text>;
@@ -59,6 +59,12 @@ if (!disponivel) {
 }
 
 export default function AcelerometroScreen(){
+  const [data, setData] = useState({ x: 0, y: 0, z: 0 });
+  const [ativo, setAtivo] = useState(false);
+  const subscriptionRef = useRef(null); 
 
+  useEffect(() => {
+    return () => subscriptionRef.current?.remove(); // cleanup ao desmontar
+  }, []);
 }
 
