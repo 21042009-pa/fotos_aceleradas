@@ -2,7 +2,9 @@ import { Accelerometer } from "expo-sensors";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
 // Configuração câmera
-const [permission, requestPermission] = useCameraPermissions();
+
+export default function CameraScreen(){
+  const [permission, requestPermission] = useCameraPermissions();
 const cameraRef = useRef(null);
 const [pronta, setPronta] = useState(false);
 
@@ -43,12 +45,20 @@ import { Image } from 'react-native';
     resizeMode="contain"
   />
 )}
+}
+
 
 //configuração acelerometro
 import { Accelerometer } from 'expo-sensors';
+import { useEffect, useRef, useState } from 'react';
 
 const disponivel = await Accelerometer.isAvailableAsync();
 
 if (!disponivel) {
-  // informe ao usuario que o sensor nao esta disponivel
+  alert("sensor indisponível")
 }
+
+export default function AcelerometroScreen(){
+
+}
+
