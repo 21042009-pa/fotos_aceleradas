@@ -33,3 +33,13 @@ function trocarCamera() {
 }
 
 <CameraView facing={facing}/>
+
+import { Image } from 'react-native';
+
+{foto && (
+  <Image
+    source={{ uri: foto.uri }}
+    style={{ width: '100%', height: 300 }}
+    resizeMode="contain"
+  />
+)}
