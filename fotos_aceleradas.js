@@ -43,3 +43,12 @@ import { Image } from 'react-native';
     resizeMode="contain"
   />
 )}
+
+//configuração acelerometro
+import { Accelerometer } from 'expo-sensors';
+
+const disponivel = await Accelerometer.isAvailableAsync();
+
+if (!disponivel) {
+  // informe ao usuario que o sensor nao esta disponivel
+}
