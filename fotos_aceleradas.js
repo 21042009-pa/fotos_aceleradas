@@ -25,3 +25,11 @@ if (!permission.granted) {
   facing="back"
   onCameraReady={() => setPronta(true)} // Aguardar este evento antes de chamar takePictureAsync
 />;
+
+const [facing, setFacing] = useState('back'); // 'back' | 'front'
+
+function trocarCamera() {
+  setFacing(prev => prev === 'back' ? 'front' : 'back');
+}
+
+<CameraView facing={facing}/>
