@@ -1,7 +1,10 @@
-import { Accelerometer } from 'expo-sensors';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-
+import { Accelerometer } from "expo-sensors";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { useRef, useState } from "react";
+// Configuração câmera
 const [permission, requestPermission] = useCameraPermissions();
+const cameraRef = useRef(null);
+const [pronta, setPronta] = useState(false);
 
 if (!permission) {
   return <Text>Verificando permissoes...</Text>;
@@ -15,3 +18,10 @@ if (!permission.granted) {
     </>
   );
 }
+
+<CameraView // Renderiza o preview em tempo real
+  ref={cameraRef}
+  style={{ flex: 1 }} // Precisa de dimensões definidas
+  facing="back"
+  onCameraReady={() => setPronta(true)} // Aguardar este evento antes de chamar takePictureAsync
+/>;
